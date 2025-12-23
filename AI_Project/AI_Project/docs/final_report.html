@@ -1,0 +1,110 @@
+<html><head><meta charset='utf-8'><title>Final Report</title><link rel="stylesheet" href="print.css"></head><body><h1>Final Project Report — Transport Delay Analysis</h1>
+<h2>Abstract</h2>
+<p>This report summarizes the work performed to analyze and model transport delay using the provided dataset. It covers data cleaning, feature engineering (including weather severity, route frequency, day type), outlier detection and handling (winsorization), modeling (RandomForest and LinearRegression), cross-validation, explainability (SHAP and feature importances), and recommendations.</p>
+<h2>Table of contents</h2>
+<ul>
+<li>Abstract</li>
+<li>Project Goals</li>
+<li>Dataset</li>
+<li>Data Cleaning</li>
+<li>Feature Engineering</li>
+<li>Outlier Detection and Handling</li>
+<li>Modeling</li>
+<li>Explainability and Cross-Validation Visuals</li>
+<li>Results Summary</li>
+<li>Limitations</li>
+<li>Recommendations and Next Steps</li>
+<li>Reproducibility</li>
+<li>Appendices</li>
+</ul>
+<hr>
+<h2>Cover</h2>
+<p>Transport Delay Analysis — Final Report</p>
+<p>Author: Project Team</p>
+<p>Date: December 2025</p>
+<hr>
+<h2>1. Project Goals</h2>
+<ul>
+<li>Predict delay minutes and understand drivers of delay.</li>
+<li>Implement robust data cleaning and feature engineering per the project proposal.</li>
+<li>Handle outliers with a transparent policy and document decisions.</li>
+<li>Train interpretable and high-performing models; provide explainability and CV summaries.</li>
+</ul>
+<h2>2. Dataset</h2>
+<ul>
+<li>Source: <code>dirty_transport_dataset.csv</code> in repository root.</li>
+<li>Key fields used: timestamps, route_id, passenger_count, weather descriptors, gps coordinates, scheduled times, observed arrival/departure.</li>
+</ul>
+<h2>3. Data Cleaning</h2>
+<ul>
+<li>Timestamp parsing and timezone-normalization.</li>
+<li>Computation of <code>delay_minutes</code> (actual - scheduled arrival).</li>
+<li>Semantic invalidation of GPS and passenger counts (e.g., negative passengers set to NaN).</li>
+<li>Imputation strategies for missing values documented in <code>src/transport_analysis/data_cleaner.py</code>.</li>
+</ul>
+<h2>4. Feature Engineering</h2>
+<p>New features implemented per project proposal:</p>
+<ul>
+<li><code>weather_severity</code>: numeric score derived from weather descriptors.</li>
+<li><code>weather_severity_cat</code>: categorical bucketing of severity.</li>
+<li><code>route_frequency</code>: historical route count in dataset; normalized as <code>route_frequency_norm</code>.</li>
+<li><code>is_weekend</code> and <code>day_type</code>: weekday/weekend/holiday buckets.</li>
+<li><code>scheduled_hour</code>, <code>scheduled_minute</code> parsed from scheduled timestamps.</li>
+</ul>
+<p>See <code>src/transport_analysis/feature_engineer.py</code> for implementation details.</p>
+<h2>5. Outlier Detection and Handling</h2>
+<ul>
+<li>EDA performed in <code>notebooks/EDA_Outlier_Analysis.ipynb</code> — includes IQR and Z-score approaches, semantic invalidation rules, and visualization.</li>
+<li>Winsorization policy: lower quantile = 1st percentile, upper quantile = 99th percentile by default. Applied to <code>passenger_count</code> and <code>delay_minutes</code> in feature engineering when enabled.</li>
+<li>Winsorization is enabled by default in the export pipeline; refer to <code>scripts/export_data_view.py</code> and <code>scripts/rebuild_outputs.py</code> (CLI <code>--no-winsor</code> to disable).</li>
+</ul>
+<p>Rationale: winsorization reduces influence of extreme outliers while preserving data mass and interpretability for downstream models.</p>
+<h2>6. Modeling</h2>
+<ul>
+<li>Models trained: <code>RandomForestRegressor</code> and <code>LinearRegression</code>.</li>
+<li>Pipeline saves per-model artifacts to <code>results/</code> as <code>model_RandomForest.pkl</code> and <code>model_LinearRegression.pkl</code>.</li>
+<li>Cross-validation (K-fold) applied; mean and std R² reported per model and saved to comparison files.</li>
+</ul>
+<p>Key artifact: <a href="results/model_performance_comparison.csv">Model performance comparison</a></p>
+<h2>7. Explainability and Cross-Validation Visuals</h2>
+<ul>
+<li>Multi-model explainability report (SHAP or fallback importances) saved to: <a href="results/model_explainability_report.html">model_explainability_report.html</a>.</li>
+<li>If SHAP is available, SHAP summary plots are created; otherwise, model importances or coefficients are shown.</li>
+<li>Cross-validation comparison boxplot included in the report when CV results available: <a href="results/cv_comparison_boxplot.png">cv_comparison_boxplot.png</a></li>
+</ul>
+<h2>8. Results Summary</h2>
+<ul>
+<li>Both models produce reasonable predictive performance on the dataset (see <code>results/model_performance_comparison.csv</code> and <code>results/model_performance_comparison.png</code>).</li>
+<li>Feature importance aligns with domain expectations: scheduled time, route frequency, and weather severity are among top predictors.</li>
+</ul>
+<h2>9. Limitations</h2>
+<ul>
+<li>The dataset is small; results should be validated on larger, more representative data.</li>
+<li>SHAP computation is sample-based to limit runtime; full SHAP analysis may refine insights.</li>
+<li>Winsorization choices (1%/99%) are heuristic; sensitivity analysis is recommended.</li>
+</ul>
+<h2>10. Recommendations and Next Steps</h2>
+<ul>
+<li>Run experiments on a larger dataset and compare winsorization vs. robust estimators.</li>
+<li>Add temporal cross-validation (time-series split) to account for temporal drift.</li>
+<li>Consider causal analysis for policy recommendations.</li>
+</ul>
+<h2>11. Reproducibility</h2>
+<ul>
+<li>To rebuild artifacts:</li>
+</ul>
+<p><code>bash
+python scripts/rebuild_outputs.py</code></p>
+<ul>
+<li>To export engineered CSV with winsorization disabled:</li>
+</ul>
+<p><code>bash
+python scripts/rebuild_outputs.py --no-winsor</code></p>
+<h2>Appendices</h2>
+<ul>
+<li>Notebook: <code>notebooks/EDA_Outlier_Analysis.ipynb</code></li>
+<li>Code: <code>src/transport_analysis/feature_engineer.py</code>, <code>model_builder.py</code>, <code>explainer.py</code></li>
+<li>Results folder: <code>results/</code></li>
+</ul>
+<hr>
+<p><em>Report generated as a project deliverable draft. Figures and numeric tables referenced above are stored under <code>results/</code>.</em></p></body></html>
